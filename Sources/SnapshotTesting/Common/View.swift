@@ -970,7 +970,8 @@
       drawHierarchyInKeyWindow: Bool,
       traits: UITraitCollection,
       view: UIView,
-      viewController: UIViewController
+      viewController: UIViewController,
+      delay: TimeInterval = 0
     )
       -> Async<UIImage>
     {
@@ -988,7 +989,7 @@
       return
         (view.snapshot
         ?? Async { callback in
-          addImagesForRenderedViews(view).sequence().run { views in
+          addImagesForRenderedViews(view).sequence().delay(by: delay).run { views in
             callback(
               renderer(bounds: view.bounds, for: traits).image { ctx in
                 if drawHierarchyInKeyWindow {
@@ -1150,6 +1151,21 @@ extension Array {
           if count == self.count {
             callback(result as! [A])
           }
+        }
+      }
+    }
+  }
+}
+
+extension Async {
+  /// Delays Async `run` block
+  /// - Parameter timeInterval: Optional duration for Async to wait before running `run`
+  /// - Returns: Delayed `Async` unless no duration was provided then returns original `Async`
+  func delay(by timeInterval: TimeInterval) -> Async<Value> {
+    return Async<Value> { callback in
+      run { value in
+        DispatchQueue.main.asyncAfter(deadline: .now() + timeInterval) {
+          callback(value)
         }
       }
     }
